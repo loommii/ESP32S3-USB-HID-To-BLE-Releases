@@ -11,7 +11,7 @@ head:
 Flash the latest firmware to your ESP32-S3 board directly from the browser.
 
 <div class="flasher-card">
-  <esp-web-install-button manifest="manifest.json"></esp-web-install-button>
+  <esp-web-install-button manifest="/ESP32S3-USB-HID-To-BLE-Releases/flasher/manifest.json"></esp-web-install-button>
   <p class="flasher-note">Requires Chrome or Edge on desktop with HTTPS.</p>
 </div>
 
