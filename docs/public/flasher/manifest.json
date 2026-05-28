@@ -1,0 +1,12 @@
+{
+  "name": "ESP32S3 USB HID to BLE Bridge",
+  "version": "V2.0.1",
+  "builds": [
+    {
+      "chipFamily": "ESP32-S3",
+      "parts": [
+        { "path": "../firmware/esp32s3-usb-hid-ble.bin", "offset": 0 }
+      ]
+    }
+  ]
+}
