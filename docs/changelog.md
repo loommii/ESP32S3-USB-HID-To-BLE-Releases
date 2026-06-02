@@ -4,6 +4,19 @@ title: Changelog
 
 # Changelog
 
+## V2.1.0
+
+**New features:**
+- LED brightness adjustable (0-100%)
+- Scroll wheel direction per BLE slot (standard/reversed)
+- OTA firmware upgrade over WiFi LAN
+
+**Improvements:**
+- Removed keyboard LED manual mode — LEDs always controlled by host automatically
+- Architecture review fixes (NVS initialization, OTA robustness)
+
+---
+
 ## V2.0.1
 
 **Improved connection stability**: automatic recovery from USB transfer interruptions and unresponsive device watchdog with self-restart.
