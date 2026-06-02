@@ -14,16 +14,16 @@ Common issues and how to resolve them.
 2. Try a different USB device
 3. Power cycle the board (disconnect and reconnect power)
 
-## Cannot Find "Loommii-HID-01" in Bluetooth Settings
+## Cannot Find "Loommii-HID" in Bluetooth Settings
 
 **Possible causes:**
 - The board is not in advertising mode
-- The board is already connected to another host
+- Maximum connections reached (3 hosts)
 - Bluetooth interference
 
 **Try:**
-1. Wait for the LED to change from solid red to a blinking pattern
-2. If the LED is solid green/blue/yellow, the board is already connected — disconnect from the paired host first
+1. Wait for the LED to change from solid red to blinking purple
+2. If the LED is solid green, the board already has connections — you can still connect a new host (up to 3 total)
 3. Power cycle the board to force it into advertising mode
 4. Move closer to the board
 
@@ -40,7 +40,7 @@ Some hosts may take a few seconds to generate the pairing code. If it doesn't ap
 **Try:**
 1. Unpair and re-pair the device
 2. Check the LED status — is it showing a connected state?
-3. Switch to a different slot and switch back using `Scroll Lock + 1`
+3. Switch to a different connected host and back using `Scroll Lock + 1` / `2` / `3`
 
 ## Mouse Movement Is Jerky or Laggy
 
@@ -52,7 +52,7 @@ Some hosts may take a few seconds to generate the pairing code. If it doesn't ap
 
 - Try moving the board closer to the host
 - Check for USB power stability — a poor power supply can cause intermittent issues
-- Try switching to a different slot and back (firmware auto-recovery will attempt reconnection)
+- Try switching to a different connected host and back
 
 ## Web Flasher Shows "Failed to Fetch Manifest"
 

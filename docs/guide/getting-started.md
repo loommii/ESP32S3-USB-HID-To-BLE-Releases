@@ -16,19 +16,11 @@ Plug your USB keyboard and/or mouse into the ESP32-S3 board, then connect the bo
 
 ### 2. BLE Advertising
 
-Once the USB device is ready, the LED changes to a blinking pattern:
-
-| Connected Device | LED Color |
-|-----------------|-----------|
-| Keyboard only | Blinking purple |
-| Mouse only | Blinking blue |
-| Keyboard + mouse | Blinking yellow |
-
-The board is now broadcasting as a Bluetooth device.
+Once the USB device is ready, the LED changes to **blinking purple** — the board is advertising as **"Loommii-HID"**.
 
 ### 3. Pair
 
-On your computer or phone, search for available Bluetooth devices and select **"Loommii-HID-01"**. Your host will display a **6-digit pairing code**.
+On your computer or phone, search for available Bluetooth devices and select **"Loommii-HID"**. Your host will display a **6-digit pairing code**.
 
 ### 4. Enter the Pairing Code
 
@@ -38,31 +30,25 @@ On your computer or phone, search for available Bluetooth devices and select **"
 
 ### 5. Ready to Use
 
-Once paired, the LED turns to a solid color confirming the connection:
-
-| Connected Device | LED Color |
-|-----------------|-----------|
-| Keyboard only | Solid green |
-| Mouse only | Solid blue |
-| Keyboard + mouse | Solid yellow |
+Once paired, the LED turns **solid green** — normal operation.
 
 You're all set — your wired USB devices are now wireless!
 
-### 6. Pair Additional Hosts
+### 6. Connect Additional Hosts
 
-To pair a second or third host:
+To connect a second or third host:
 
-1. Press `Scroll Lock + 2` (or `Scroll Lock + 3`) to switch to the next slot
-2. On the target device, search for **"Loommii-HID-02"** (or **"-03"**)
-3. Repeat the pairing steps 3–5
+1. Simply search for **"Loommii-HID"** on the second computer and pair (the first host stays connected)
+2. Repeat the pairing steps 3–5
+3. Press `Scroll Lock + 1` / `2` / `3` to switch between connected hosts
 
-Each slot uses its own MAC address — hosts see them as distinct physical devices.
+All hosts share a single BLE identity — no reboot or re-pairing needed.
 
 ## Hotkeys Reference
 
 | Hotkey | Action |
 |--------|--------|
-| `Scroll Lock + 1` | Switch to Slot 1 |
-| `Scroll Lock + 2` | Switch to Slot 2 |
-| `Scroll Lock + 3` | Switch to Slot 3 |
-| `Scroll Lock + Esc` | Unpair current device (clear bonding) |
+| `Scroll Lock + 1` | Switch to connected host #1 |
+| `Scroll Lock + 2` | Switch to connected host #2 |
+| `Scroll Lock + 3` | Switch to connected host #3 |
+| `Scroll Lock + Esc` | Unpair current active device (clear bonding) |

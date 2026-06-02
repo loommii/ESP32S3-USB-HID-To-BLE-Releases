@@ -4,6 +4,21 @@ title: Changelog
 
 # Changelog
 
+## V2.2.0
+
+**Architecture rewrite — multi-device switching:**
+- Single BLE identity "Loommii-HID", up to 3 hosts connected simultaneously
+- Hotkey switching between active targets (`Scroll Lock + 1/2/3`), no reboot required
+- Actively requests 7.5ms–10ms low-latency connection parameters on connection
+- Mouse timer period adapts to connection interval, synced on target switch
+- LED state machine simplified to 5 states (red / blinking purple / green / solid purple / solid red)
+
+**Improvements:**
+- Bypasses esp_hidd layer, sends HID reports directly via `ble_gatts_notify_custom()` with per-connection handle
+- LED Output Report polling force-refreshes on target switch
+
+---
+
 ## V2.1.0
 
 **New features:**

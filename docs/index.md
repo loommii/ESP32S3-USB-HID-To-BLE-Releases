@@ -21,12 +21,12 @@ features:
     details: Plug any wired USB keyboard or mouse into the ESP32-S3 — it becomes a wireless Bluetooth LE HID device
   - title: Combo HID Bridge
     details: Supports both USB keyboard and mouse simultaneously, presented as a single composite HID device over BLE
-  - title: 3-Host Switching
-    details: Pair with up to 3 Bluetooth hosts and switch between them instantly via hotkey — no re-pairing needed
+  - title: Multi-Host Connection
+    details: Single BLE identity, up to 3 hosts connected simultaneously, hotkey switching — no reboot or re-pairing needed
   - title: Smooth Mouse Motion
     details: Ring buffer + timer-based resampling + residual compensation for lag-free, smooth cursor movement
   - title: LED Status Indicators
-    details: 10 distinct RGB LED states show connection, pairing, and error status at a glance
+    details: RGB LED shows connection, advertising, and pairing status in real time, brightness adjustable 0-100%
   - title: Keyboard Pairing Entry
     details: Type the 6-digit pairing code directly on your USB keyboard — no screen or extra buttons needed
 ---
