@@ -4,8 +4,10 @@
 
 # USB HID → BLE Bridge
 
-**Version: V2.0.1**
+**Version: V2.1.0**
 
+> **V2.1.0** — New desktop client: WiFi provisioning, device settings, OTA firmware upgrade; LED brightness percentage control; per-slot wheel direction.
+>
 > **V2.0.1** — Improved connection stability: automatic recovery from USB transfer interruptions and unresponsive device watchdog with self-restart.
 >
 > **V2.0.0** — Closed-source fork from [ESP32S3-USB-Keyboard-To-BLE](https://github.com/loommii/ESP32S3-USB-Keyboard-To-BLE), upgraded to a combo keyboard+mouse HID bridge.
@@ -27,6 +29,17 @@ Turns wired USB keyboards and mice into a wireless Bluetooth (BLE) combo HID dev
 7. To switch devices: press `Scroll Lock + 2` (or `Scroll Lock + 3`) to switch to the second/third device, search for **"Loommii-HID-02"** (or **"-03"**) on that device and repeat steps 3–6
 
 > Press **Esc** at any time during pairing code entry to cancel pairing.
+
+## Desktop Client
+
+V2.1.0 introduces a desktop client (macOS / Windows) that connects to the device over WiFi LAN:
+
+- **Device discovery** — auto-discovers devices on the local network
+- **WiFi provisioning** — scan nearby networks, submit credentials to complete setup
+- **Device settings** — device name prefix, LED brightness (0-100%), wheel direction
+- **OTA upgrade** — upload firmware over LAN, no USB cable needed
+- **Device operations** — reboot, clear pairing, re-provision WiFi, factory reset
+- **Dark / light theme toggle**
 
 ## Compatibility
 
@@ -52,6 +65,12 @@ Turns wired USB keyboards and mice into a wireless Bluetooth (BLE) combo HID dev
 2. Click "Connect and flash"
 3. Select the serial port → wait for completion → device reboots automatically
 
+### Method 2: Desktop client OTA
+
+1. Open the desktop client, connect to the device
+2. Go to the OTA page, select the firmware file
+3. Click upload, wait for completion
+
 ## Features
 
 - **Combo HID bridge** — supports both USB keyboard and mouse simultaneously, presented as a single composite HID device over BLE
@@ -64,6 +83,9 @@ Turns wired USB keyboards and mice into a wireless Bluetooth (BLE) combo HID dev
 - **CapsLock / NumLock / ScrollLock LED sync** — turn off NumLock on the host, the keyboard LED goes out simultaneously
 - **Keyboard pairing code entry** — type the pairing code directly on your USB keyboard, no screen or extra buttons needed
 - **Hotkey switching & unpairing** — Scroll Lock modifier combos, no extra buttons
+- **OTA firmware upgrade** — wireless firmware update over LAN, no USB cable needed
+- **Adjustable LED brightness** — adjust on-board indicator LED brightness via desktop client (0-100%)
+- **Per-slot wheel direction** — each BLE slot stores its own scroll wheel direction (standard/reversed), recommended reversed for Mac users
 
 ## LED Status
 
@@ -111,4 +133,5 @@ Turns wired USB keyboards and mice into a wireless Bluetooth (BLE) combo HID dev
 | Mouse Sampling | 128-event ring buffer, ~133 Hz timer-based resampling |
 | Bluetooth Version | BLE 5.0 (compatible with BLE 4.x and later) |
 | Power | Powered via ESP32-S3 USB port (no external supply needed) |
-| Indicator | On-board WS2812 RGB LED, 10 states indicating device status |
+| Indicator | On-board WS2812 RGB LED, 10 states, brightness 0-100% adjustable |
+| Desktop Client | macOS / Windows |
