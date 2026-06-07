@@ -2,6 +2,8 @@
 
 The bridge uses a single BLE identity and supports up to 3 hosts connected simultaneously, with fast switching between them.
 
+> **Prerequisite**: The device must be provisioned (activated + WiFi configured) before it enters normal HID mode. See [Getting Started](/guide/getting-started) for first-time setup.
+
 ## Device Name
 
 All connections share a single BLE device name:
@@ -12,12 +14,11 @@ All connections share a single BLE device name:
 
 ## Pairing a New Device
 
-1. Ensure the board is powered on with USB device(s) connected
-2. The board automatically starts BLE advertising after USB initialization (LED blinking purple)
-3. On your target host, search for **"Loommii-HID"**
-4. Select it — your host will display a **6-digit pairing code**
-5. **Type the 6-digit code on your USB keyboard** and press **Enter**
-6. LED turns solid green — pairing successful, ready to use
+1. Ensure the board is powered on with USB device(s) connected and the LED shows **solid green** (normal mode)
+2. On your target host, search for **"Loommii-HID"** in Bluetooth settings
+3. Select it — your host will display a **6-digit pairing code**
+4. **Type the 6-digit code on your USB keyboard** and press **Enter**
+5. LED turns solid green — pairing successful, ready to use
 
 > Press **Esc** on your USB keyboard at any time during code entry to cancel pairing.
 

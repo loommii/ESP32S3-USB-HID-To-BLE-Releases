@@ -2,6 +2,19 @@
 
 Common issues and how to resolve them.
 
+## Device Won't Enter Normal Mode (Stuck in Provisioning)
+
+**Possible causes:**
+- Device not activated (no valid activation code)
+- WiFi credentials not configured
+- Provisioning failed or incomplete
+
+**Try:**
+1. Open the desktop app — it will detect the device and guide you through provisioning
+2. If activation fails, verify you have the correct activation code for this device
+3. If WiFi connection fails, check that the network is 2.4GHz (ESP32-S3 does not support 5GHz)
+4. The device will keep retrying in provisioning mode — no timeout
+
 ## LED Shows Solid Red
 
 **Possible causes:**
@@ -17,15 +30,28 @@ Common issues and how to resolve them.
 ## Cannot Find "Loommii-HID" in Bluetooth Settings
 
 **Possible causes:**
-- The board is not in advertising mode
+- The device is still in provisioning mode (blinking purple) — it must be provisioned first via the desktop app
 - Maximum connections reached (3 hosts)
 - Bluetooth interference
 
 **Try:**
-1. Wait for the LED to change from solid red to blinking purple
+1. Check the LED — if it's blinking purple, the device needs provisioning. Open the desktop app to complete setup
 2. If the LED is solid green, the board already has connections — you can still connect a new host (up to 3 total)
-3. Power cycle the board to force it into advertising mode
+3. Power cycle the board
 4. Move closer to the board
+
+## Desktop App Cannot Discover Device
+
+**Possible causes:**
+- Device not in provisioning mode (not advertising BLE provisioning service)
+- Bluetooth on your computer is disabled
+- BLE range issue
+
+**Try:**
+1. Ensure the LED is blinking purple (provisioning mode)
+2. Enable Bluetooth on your computer
+3. Move the board closer to your computer
+4. If the LED is solid green, the device is already provisioned — you can access it via WiFi LAN instead
 
 ## Pairing Code Not Appearing
 
@@ -53,6 +79,18 @@ Some hosts may take a few seconds to generate the pairing code. If it doesn't ap
 - Try moving the board closer to the host
 - Check for USB power stability — a poor power supply can cause intermittent issues
 - Try switching to a different connected host and back
+
+## WiFi Not Connecting After Provisioning
+
+**Possible causes:**
+- Wrong WiFi password entered during provisioning
+- 5GHz network (ESP32-S3 only supports 2.4GHz)
+- Router too far from the board
+
+**Try:**
+1. Factory reset the device and re-provision with the correct WiFi credentials
+2. Ensure you're connecting to a 2.4GHz network
+3. Move the board closer to the router
 
 ## Web Flasher Shows "Failed to Fetch Manifest"
 

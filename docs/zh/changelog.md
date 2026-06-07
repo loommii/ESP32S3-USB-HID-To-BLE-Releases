@@ -4,6 +4,33 @@ title: 更新日志
 
 # 更新日志
 
+## V3.0.0
+
+**架构重写 — BLE 配网 + 设备激活：**
+- 首次设置改用 ESP-IDF `network_provisioning`（BLE 传输 + Security 1 + PoP）
+- 桌面 App 负责完整配网流程：激活码（ECDSA P-256 签名）+ WiFi 凭据
+- 设备首次启动或恢复出厂后自动进入配网模式
+- 配网完成 → 设备自动重启 → 进入正常 HID 模式
+- BLE 广播 Manufacturer Data 嵌入真实 MAC + 激活/WiFi 状态标志（macOS 兼容方案）
+
+**新增功能：**
+- ECDSA P-256 激活系统 — 每台设备绑定唯一的激活码（基于 MAC 地址签名）
+- WiFi STA 模式 — 配网后自动使用已存储的凭据连接路由器
+- `act-status` protocomm 端点 — 桌面 App 可在发送激活码前查询设备激活状态
+- 桌面 App 配网流程：BLE 发现 → protocomm 握手 → 激活 → WiFi 配置
+
+**改进：**
+- 启动顺序重构：NVS → PSA Crypto → 配网检查 → BLE HID 初始化
+- WiFi 凭据存储在自定义 NVS 命名空间（不使用 ESP-IDF 默认路径）
+- 配网 BLE 栈完成后自动释放（约 110KB 内存）
+- 配网后重启确保 NimBLE 栈干净初始化
+
+**从 V2.x 迁移：**
+- 从 V2.x 升级需先恢复出厂设置（配网和激活数据不兼容）
+- 首次设置必须使用桌面 App（不再支持从系统蓝牙设置直接配对）
+
+---
+
 ## V2.2.0
 
 **架构重写 — 多设备切换：**
