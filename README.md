@@ -4,17 +4,15 @@
 
 # USB HID → BLE Bridge
 
-**Version: V2.2.0**
+**Version: V3.0.0**
 
-> **V2.2.0** — Multi-device switching architecture rewrite: single BLE identity + up to 3 hosts connected simultaneously, hotkey switching with no reboot required. Active low-latency connection parameter negotiation for improved mouse polling rate.
+> **V3.0.0** — Desktop client architecture rewrite (three-layer separation); BLE provisioning (first-time setup without USB cable); device activation code verification; 3 HID slot naming with platform icons. Removed OTA upgrade; merged to single firmware partition.
 >
-> **V2.1.0** — New desktop client: WiFi provisioning, device settings, OTA firmware upgrade; LED brightness percentage control; per-slot wheel direction.
+> **V2.2.0** — Multi-device switching architecture rewrite: single BLE identity + up to 3 hosts connected simultaneously, hotkey switching with no reboot required.
 >
-> **V2.0.1** — Improved connection stability: automatic recovery from USB transfer interruptions and unresponsive device watchdog with self-restart.
+> **V2.1.0** — New desktop client: LED brightness percentage control; per-slot wheel direction.
 >
 > **V2.0.0** — Closed-source fork from [ESP32S3-USB-Keyboard-To-BLE](https://github.com/loommii/ESP32S3-USB-Keyboard-To-BLE), upgraded to a combo keyboard+mouse HID bridge.
->
-> — Adds USB mouse support (motion accumulator engine, HID Report Descriptor parser, Boot/Report protocol auto-switching), LED states expanded to 10, task scheduling optimizations.
 
 <p align="center"><img src="logo.png" width="260" alt="logo"></p>
 
@@ -35,12 +33,13 @@ Turns wired USB keyboards and mice into a wireless Bluetooth (BLE) combo HID dev
 
 ## Desktop Client
 
-Desktop client (macOS / Windows) that connects to the device over WiFi LAN:
+Desktop client (macOS / Windows) that connects to the device via BLE or WiFi LAN:
 
-- **Device discovery** — auto-discovers devices on the local network
-- **WiFi provisioning** — scan nearby networks, submit credentials to complete setup
-- **Device settings** — device name prefix, LED brightness (0-100%), wheel direction
-- **OTA upgrade** — upload firmware over LAN, no USB cable needed
+- **Device discovery** — auto-scans nearby BLE devices + LAN mDNS devices
+- **Device activation** — enter activation code to authenticate device identity
+- **WiFi provisioning** — scan networks and submit credentials over an encrypted BLE channel, no USB cable needed
+- **HID slot management** — view 3 BLE connection slots, customize device names and platform icons
+- **Device settings** — LED brightness (0-100%), wheel direction inversion
 - **Device operations** — reboot, clear pairing, re-provision WiFi, factory reset
 - **Dark / light theme toggle**
 
@@ -68,11 +67,13 @@ Desktop client (macOS / Windows) that connects to the device over WiFi LAN:
 2. Click "Connect and flash"
 3. Select the serial port → wait for completion → device reboots automatically
 
-### Method 2: Desktop client OTA
+### Method 2: Command-line flashing
 
-1. Open the desktop client, connect to the device
-2. Go to the OTA page, select the firmware file
-3. Click upload, wait for completion
+Requires [ESP-IDF](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/get-started/) development environment:
+
+```bash
+idf.py flash monitor
+```
 
 ## Features
 
@@ -86,7 +87,7 @@ Desktop client (macOS / Windows) that connects to the device over WiFi LAN:
 - **CapsLock / NumLock / ScrollLock LED sync** — turn off NumLock on the host, the keyboard LED goes out simultaneously
 - **Keyboard pairing code entry** — type the pairing code directly on your USB keyboard, no screen or extra buttons needed
 - **Hotkey switching & unpairing** — Scroll Lock modifier combos, no extra buttons
-- **OTA firmware upgrade** — wireless firmware update over LAN, no USB cable needed
+- **Device activation code** — ECDSA P-256 signature verification, activate via desktop client or BLE channel
 - **Adjustable LED brightness** — adjust on-board indicator LED brightness via desktop client (0-100%)
 - **Per-target wheel direction** — each BLE target stores its own scroll wheel direction (standard/reversed), recommended reversed for Mac users
 
@@ -97,6 +98,7 @@ Desktop client (macOS / Windows) that connects to the device over WiFi LAN:
 | USB disconnected | Solid red | No USB device plugged in or not ready |
 | BLE advertising | Blinking purple | USB ready, waiting for host to connect |
 | Connected | Solid green | USB + at least 1 BLE host connected, normal operation |
+| Target switch | Blinking green | Just switched the active target slot via hotkey or client |
 | Pairing code entry | Solid purple | Waiting for user to type the pairing code |
 | Error | Solid red | USB communication error |
 
@@ -123,6 +125,7 @@ All connections share a single BLE identity:
 
 | Item | Details |
 |------|---------|
+| Firmware Version | V3.0.0 |
 | SDK | ESP-IDF v6.0.1 |
 | BLE Stack | Apache NimBLE |
 | BLE Connection Mode | Single identity, up to 3 hosts simultaneously |
@@ -134,4 +137,4 @@ All connections share a single BLE identity:
 | Bluetooth Version | BLE 5.0 |
 | Power | Powered via ESP32-S3 USB port (no external supply needed) |
 | Indicator | On-board WS2812 RGB LED, brightness 0-100% adjustable |
-| Desktop Client | macOS / Windows |
+| Desktop Client | macOS / Windows (Tauri v2 + React) |
