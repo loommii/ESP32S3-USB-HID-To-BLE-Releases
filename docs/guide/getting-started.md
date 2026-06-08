@@ -79,7 +79,7 @@ All hosts share a single BLE identity — no reboot or re-pairing needed.
 
 ## Upgrading from V2.x
 
-V3.0.0 introduces a new provisioning and activation system. If you are upgrading from V2.x:
+V3.0.x introduces a new provisioning and activation system. If you are upgrading from V2.x:
 
 1. **Factory reset is required** — hold the reset button or use the desktop app's "Factory Reset" function
 2. After factory reset, the device enters provisioning mode

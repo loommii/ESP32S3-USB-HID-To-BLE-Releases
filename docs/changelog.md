@@ -4,6 +4,17 @@ title: Changelog
 
 # Changelog
 
+## V3.0.1
+
+**BLE multi-connection stability fixes:**
+- Increased `BT_NIMBLE_MSYS_1_BLOCK_COUNT` from 12 to 24 (restored ESP32-S3 default) to prevent mbuf pool exhaustion
+- Enabled `BT_NIMBLE_OPTIMIZE_MULTI_CONN` (Espressif's official multi-connection optimization for ESP32-S3)
+- Combo keys (Scroll Lock + 1/2/3) no longer leak digits to the target host after slot switching
+- Removed the `led_poll` module — cross-host CapsLock/NumLock/ScrollLock Output Report conflict was causing mbuf exhaustion; keyboard HID forwarding is unaffected
+- Empty HID report sent on BLE connection to prevent stuck keys after reconnect
+
+---
+
 ## V3.0.0
 
 **Architecture rewrite — BLE provisioning + activation:**

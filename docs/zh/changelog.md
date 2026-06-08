@@ -4,6 +4,17 @@ title: 更新日志
 
 # 更新日志
 
+## V3.0.1
+
+**BLE 多连接稳定性修复：**
+- `BT_NIMBLE_MSYS_1_BLOCK_COUNT` 从 12 恢复为 24（ESP32-S3 默认值），防止 mbuf 池耗尽
+- 启用 `BT_NIMBLE_OPTIMIZE_MULTI_CONN`（乐鑫官方 ESP32-S3 多连接优化）
+- 组合键（Scroll Lock + 1/2/3）切换槽位后不再向目标主机泄露数字键
+- 移除 `led_poll` 轮询模块 — 跨主机的 CapsLock/NumLock/ScrollLock Output Report 争抢导致 mbuf 耗尽，键鼠转发不受影响
+- BLE 连接建立时发送空 HID 报告，防止重连后卡键
+
+---
+
 ## V3.0.0
 
 **架构重写 — BLE 配网 + 设备激活：**
