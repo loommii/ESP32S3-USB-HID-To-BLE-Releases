@@ -4,8 +4,10 @@
 
 # USB HID → BLE Bridge
 
-**Version: V3.0.0**
+**Version: V3.0.1**
 
+> **V3.0.1** — BLE multi-connection stability fixes: msys mbuf pool restored to 24 (default for ESP32-S3), official multi-conn optimization enabled, combo keys no longer leak digits to host, removed LED poll module to eliminate cross-host Output Report conflicts.
+>
 > **V3.0.0** — Desktop client architecture rewrite (three-layer separation); BLE provisioning (first-time setup without USB cable); device activation code verification; 3 HID slot naming with platform icons. Removed OTA upgrade; merged to single firmware partition.
 >
 > **V2.2.0** — Multi-device switching architecture rewrite: single BLE identity + up to 3 hosts connected simultaneously, hotkey switching with no reboot required.
@@ -84,7 +86,6 @@ idf.py flash monitor
 - **Multi-host simultaneous connection** — single BLE identity, up to 3 hosts connected at the same time, hotkey switching with no reboot
 - **Low-latency connection parameters** — actively requests 7.5ms–10ms connection interval; actual interval negotiated by the host
 - **Auto-reconnect** — advertising resumes automatically when a host disconnects, allowing the host to reconnect
-- **CapsLock / NumLock / ScrollLock LED sync** — turn off NumLock on the host, the keyboard LED goes out simultaneously
 - **Keyboard pairing code entry** — type the pairing code directly on your USB keyboard, no screen or extra buttons needed
 - **Hotkey switching & unpairing** — Scroll Lock modifier combos, no extra buttons
 - **Device activation code** — ECDSA P-256 signature verification, activate via desktop client or BLE channel
@@ -125,7 +126,7 @@ All connections share a single BLE identity:
 
 | Item | Details |
 |------|---------|
-| Firmware Version | V3.0.0 |
+| Firmware Version | V3.0.1 |
 | SDK | ESP-IDF v6.0.1 |
 | BLE Stack | Apache NimBLE |
 | BLE Connection Mode | Single identity, up to 3 hosts simultaneously |
