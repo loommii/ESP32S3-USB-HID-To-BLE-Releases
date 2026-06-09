@@ -4,8 +4,10 @@
 
 # USB HID → BLE Bridge
 
-**Version: V3.0.1**
+**Version: V3.0.2**
 
+> **V3.0.2** — Fixes an intermittent USB freeze issue where the keyboard and mouse would stop responding after extended use. Improves USB communication stability for long-running operation.
+>
 > **V3.0.1** — BLE multi-connection stability fixes: msys mbuf pool restored to 24 (default for ESP32-S3), official multi-conn optimization enabled, combo keys no longer leak digits to host, removed LED poll module to eliminate cross-host Output Report conflicts.
 >
 > **V3.0.0** — Desktop client architecture rewrite (three-layer separation); BLE provisioning (first-time setup without USB cable); device activation code verification; 3 HID slot naming with platform icons. Removed OTA upgrade; merged to single firmware partition.
@@ -126,7 +128,7 @@ All connections share a single BLE identity:
 
 | Item | Details |
 |------|---------|
-| Firmware Version | V3.0.1 |
+| Firmware Version | V3.0.2 |
 | SDK | ESP-IDF v6.0.1 |
 | BLE Stack | Apache NimBLE |
 | BLE Connection Mode | Single identity, up to 3 hosts simultaneously |
