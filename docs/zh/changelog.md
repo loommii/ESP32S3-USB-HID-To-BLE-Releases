@@ -4,6 +4,18 @@ title: 更新日志
 
 # 更新日志
 
+## V3.0.2
+
+**USB 冻结缓解 — 环缓冲 + 分发任务：**
+- 确认为 ESP32-S3 DWC2 USB 控制器硬件设计缺陷（GitHub espressif/esp-idf#14996）
+- HID 回调缩减到极致：只读原始数据 → memcpy 到无锁环缓冲，不做任何 IPC
+- 新增 `hid_report_dispatcher` 分发任务，在独立上下文调用 bridge/mouse_accumulator
+- 健康指标（report_count、max_interval_ms）移至分发任务更新
+- 降低长时间运行时 USB IN 传输静默冻结的概率
+- 版本号更新至 V3.0.2
+
+---
+
 ## V3.0.1
 
 **BLE 多连接稳定性修复：**

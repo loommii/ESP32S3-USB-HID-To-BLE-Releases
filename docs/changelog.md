@@ -4,6 +4,18 @@ title: Changelog
 
 # Changelog
 
+## V3.0.2
+
+**USB freeze mitigation — ring buffer + dispatcher:**
+- Identified root cause as ESP32-S3 DWC2 USB controller HW erratum (GitHub espressif/esp-idf#14996)
+- HID callback reduced to minimum: raw data read → memcpy to lock-free ring buffer, no IPC calls
+- New `hid_report_dispatcher` task consumes ring buffer, calls bridge/mouse_accumulator in dedicated context
+- Health metrics (report_count, max_interval_ms) moved out of callback to dispatcher
+- Reduced probability of silent USB IN transfer freeze during extended operation
+- Version bumped to V3.0.2
+
+---
+
 ## V3.0.1
 
 **BLE multi-connection stability fixes:**
