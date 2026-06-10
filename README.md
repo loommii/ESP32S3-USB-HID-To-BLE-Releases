@@ -141,3 +141,13 @@ All connections share a single BLE identity:
 | Power | Powered via ESP32-S3 USB port (no external supply needed) |
 | Indicator | On-board WS2812 RGB LED, brightness 0-100% adjustable |
 | Desktop Client | macOS / Windows (Tauri v2 + React) |
+
+## Known Issues
+
+### USB Intermittent Freeze (V3.0.2)
+
+Some units may experience an intermittent USB freeze where the keyboard and mouse stop responding after extended use, with no error messages or crash logs. The USB controller silently stops delivering data, while WiFi/HTTP and BLE connections remain normal.
+
+**Root cause**: A confirmed hardware design limitation (HW erratum) of the ESP32-S3 DWC2 USB controller, tracked as [GitHub Issue #14996](https://github.com/espressif/esp-idf/issues/14996) — still open. Gaming mice with high polling rates (500-1000Hz) are more likely to trigger this erratum, but it can also occur with standard USB HID devices.
+
+**Mitigation (V3.0.2)**: The USB HID callback has been minimized to only copy raw data into a lock-free ring buffer, with a dedicated dispatcher task handling data processing. This reduces the probability of triggering the erratum but does not eliminate it entirely.
