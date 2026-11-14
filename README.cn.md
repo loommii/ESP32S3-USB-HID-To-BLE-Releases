@@ -4,8 +4,10 @@
 
 # USB HID → BLE 蓝牙桥接器
 
-**版本: V3.0.2**
+**版本: V3.0.4**
 
+> **V3.0.4** — 迁移至 ESP-IDF 6.1；修复 BLE HID 健壮性问题（mbuf 所有权、活跃目标一致性、解绑竞态）；修复桌面端 WiFi 扫描可靠性与结果分页。
+>
 > **V3.0.2** — 修复 USB 长时间使用后键盘鼠标停止响应的间歇性卡死问题，提升长时间运行时的 USB 通信稳定性。
 >
 > **V3.0.1** — BLE 多连接稳定性修复：msys mbuf 池扩至 24（恢复默认）、启用乐鑫多连接优化、组合键不再透传数字键、移除 LED 轮询模块消除跨主机 Output Report 冲突。
@@ -128,8 +130,8 @@ idf.py flash monitor
 
 | 项目 | 说明 |
 |------|------|
-| 固件版本 | V3.0.2 |
-| SDK | ESP-IDF v6.0.1 |
+| 固件版本 | V3.0.4 |
+| SDK | ESP-IDF v6.1 |
 | BLE 协议栈 | Apache NimBLE |
 | BLE 连接模式 | 单一身份，最多 3 台主机同时连接 |
 | BLE 外观值 | Generic（组合设备，确保 macOS 完整识别） |
@@ -143,6 +145,10 @@ idf.py flash monitor
 | 桌面客户端 | macOS / Windows（Tauri v2 + React） |
 
 ## 已知问题
+
+### ESP-IDF 6.1 构建说明
+
+ESP-IDF v6.1 不再在 ESP32-S3 上提供 `CONFIG_BT_NIMBLE_OPTIMIZE_MULTI_CONN`：`SOC_BLE_MULTI_CONN_OPTIMIZATION` 已从 esp32s3 的 SoC caps 中移除（v6.0.1 中仍存在）。多连接能力仍通过 `CONFIG_BT_NIMBLE_MAX_CONNECTIONS=3` 和 `CONFIG_BT_CTRL_BLE_MAX_ACT=6` 配置。6.1 构建同时将 `CONFIG_BT_NIMBLE_MSYS_1_BLOCK_COUNT` 从 24 提升到 32，为 3 连接/133Hz 留出余量。升级后请在硬件上对 3 主机切换/配对流程做负载验证。
 
 ### USB 间歇性卡死（V3.0.2）
 

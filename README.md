@@ -4,8 +4,10 @@
 
 # USB HID → BLE Bridge
 
-**Version: V3.0.2**
+**Version: V3.0.4**
 
+> **V3.0.4** — Migrated to ESP-IDF 6.1; BLE HID robustness fixes (mbuf ownership, active-target consistency, unpair race); desktop WiFi scan reliability and result pagination fixes.
+>
 > **V3.0.2** — Fixes an intermittent USB freeze issue where the keyboard and mouse would stop responding after extended use. Improves USB communication stability for long-running operation.
 >
 > **V3.0.1** — BLE multi-connection stability fixes: msys mbuf pool restored to 24 (default for ESP32-S3), official multi-conn optimization enabled, combo keys no longer leak digits to host, removed LED poll module to eliminate cross-host Output Report conflicts.
@@ -128,8 +130,8 @@ All connections share a single BLE identity:
 
 | Item | Details |
 |------|---------|
-| Firmware Version | V3.0.2 |
-| SDK | ESP-IDF v6.0.1 |
+| Firmware Version | V3.0.4 |
+| SDK | ESP-IDF v6.1 |
 | BLE Stack | Apache NimBLE |
 | BLE Connection Mode | Single identity, up to 3 hosts simultaneously |
 | BLE Appearance | Generic (composite device, required for macOS recognition) |
@@ -143,6 +145,10 @@ All connections share a single BLE identity:
 | Desktop Client | macOS / Windows (Tauri v2 + React) |
 
 ## Known Issues
+
+### ESP-IDF 6.1 Build Note
+
+ESP-IDF v6.1 no longer exposes `CONFIG_BT_NIMBLE_OPTIMIZE_MULTI_CONN` on ESP32-S3 because `SOC_BLE_MULTI_CONN_OPTIMIZATION` was removed from the esp32s3 SoC caps (it existed in v6.0.1). Multi-connection support is still configured through `CONFIG_BT_NIMBLE_MAX_CONNECTIONS=3` and `CONFIG_BT_CTRL_BLE_MAX_ACT=6`. The 6.1 build also raises `CONFIG_BT_NIMBLE_MSYS_1_BLOCK_COUNT` from 24 to 32 for 3-connection/133 Hz headroom. Re-test the 3-host switch/pairing flow under load on hardware after upgrading.
 
 ### USB Intermittent Freeze (V3.0.2)
 
