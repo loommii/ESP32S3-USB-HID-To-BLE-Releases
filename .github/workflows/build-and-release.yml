@@ -13,6 +13,8 @@
 #   3. 构建出的固件自动回写 flasher manifest 版本号，消除版本漂移
 #   4. tag 指向真正包含该固件的提交，并记录源码 commit 溯源
 #   5. 发布物附 SHA256SUMS；只上传发布物，绝不上传 .elf/.map
+#
+# 触发：Actions → Build & Release → Run workflow，填入私有仓库 tag 名称。
 # ============================================================
 
 name: Build & Release
