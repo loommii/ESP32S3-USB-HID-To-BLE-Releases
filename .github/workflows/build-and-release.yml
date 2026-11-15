@@ -132,6 +132,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     container: espressif/idf:v6.1
+    # 容器内默认 shell 是 sh(dash)，不支持 set -o pipefail，显式指定 bash
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: 检出私有源码（只读）
         uses: actions/checkout@v4
