@@ -388,6 +388,16 @@ jobs:
 
           gh release upload "${TAG}" dist/* --clobber
 
+          # 清理迁移前的固定名固件，避免与版本化产物并存
+          LEGACY="esp32s3-usb-hid-ble.bin"
+          if gh release view "${TAG}" --json assets --jq '.assets[].name' | grep -qx "${LEGACY}"; then
+            echo "清理遗留资产: ${LEGACY}"
+            gh release delete-asset "${TAG}" "${LEGACY}" --yes
+          fi
+
+          # 重发布时同步更新说明，避免保留旧文案
+          gh release edit "${TAG}" --notes "${NOTES}"
+
       - name: 汇总
         env:
           TAG: ${{ needs.preflight.outputs.tag }}
