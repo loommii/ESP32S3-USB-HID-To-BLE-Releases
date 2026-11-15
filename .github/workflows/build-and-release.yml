@@ -168,7 +168,11 @@ jobs:
 
           tag = sys.argv[1]
           desc = json.loads(pathlib.Path("build/project_description.json").read_text())
-          app = pathlib.Path(desc["app_bin"]).read_bytes()
+          # app_bin 是相对 build/ 的裸文件名，不是项目根目录相对路径
+          app_path = pathlib.Path(desc.get("build_dir") or "build") / desc["app_bin"]
+          if not app_path.exists():
+              app_path = pathlib.Path("build") / pathlib.Path(desc["app_bin"]).name
+          app = app_path.read_bytes()
           base = 0x20  # esp_app_desc_t 在 app 镜像中的偏移
           magic = struct.unpack_from("<I", app, base)[0]
           if magic != 0xABCD5432:
