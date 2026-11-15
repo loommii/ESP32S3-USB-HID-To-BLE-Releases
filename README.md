@@ -4,8 +4,10 @@
 
 # USB HID → BLE Bridge
 
-**Version: V3.0.4**
+**Version: V3.1.0**
 
+> **V3.1.0** — Replaced the ESP-IDF `usb_host` / `usb_host_hid` stack with CherryUSB (DWC2 Buffer DMA) to address the ESP32-S3 USB freeze erratum (#14996). Hardware validation is still pending; see Known Issues.
+>
 > **V3.0.4** — Migrated to ESP-IDF 6.1; BLE HID robustness fixes (mbuf ownership, active-target consistency, unpair race); desktop WiFi scan reliability and result pagination fixes.
 >
 > **V3.0.2** — Fixes an intermittent USB freeze issue where the keyboard and mouse would stop responding after extended use. Improves USB communication stability for long-running operation.
@@ -130,7 +132,7 @@ All connections share a single BLE identity:
 
 | Item | Details |
 |------|---------|
-| Firmware Version | V3.0.4 |
+| Firmware Version | V3.1.0 |
 | SDK | ESP-IDF v6.1 |
 | BLE Stack | Apache NimBLE |
 | BLE Connection Mode | Single identity, up to 3 hosts simultaneously |
@@ -150,10 +152,16 @@ All connections share a single BLE identity:
 
 ESP-IDF v6.1 no longer exposes `CONFIG_BT_NIMBLE_OPTIMIZE_MULTI_CONN` on ESP32-S3 because `SOC_BLE_MULTI_CONN_OPTIMIZATION` was removed from the esp32s3 SoC caps (it existed in v6.0.1). Multi-connection support is still configured through `CONFIG_BT_NIMBLE_MAX_CONNECTIONS=3` and `CONFIG_BT_CTRL_BLE_MAX_ACT=6`. The 6.1 build also raises `CONFIG_BT_NIMBLE_MSYS_1_BLOCK_COUNT` from 24 to 32 for 3-connection/133 Hz headroom. Re-test the 3-host switch/pairing flow under load on hardware after upgrading.
 
-### USB Intermittent Freeze (V3.0.2)
+### USB Intermittent Freeze (V3.1.0 — CherryUSB migration)
 
 Some units may experience an intermittent USB freeze where the keyboard and mouse stop responding after extended use, with no error messages or crash logs. The USB controller silently stops delivering data, while WiFi/HTTP and BLE connections remain normal.
 
 **Root cause**: A confirmed hardware design limitation (HW erratum) of the ESP32-S3 DWC2 USB controller, tracked as [GitHub Issue #14996](https://github.com/espressif/esp-idf/issues/14996) — still open. Gaming mice with high polling rates (500-1000Hz) are more likely to trigger this erratum, but it can also occur with standard USB HID devices.
 
-**Mitigation (V3.0.2)**: The USB HID callback has been minimized to only copy raw data into a lock-free ring buffer, with a dedicated dispatcher task handling data processing. This reduces the probability of triggering the erratum but does not eliminate it entirely.
+**Migration (V3.1.0)**: The firmware no longer uses the ESP-IDF `usb_host` / `usb_host_hid` stack. It now uses [CherryUSB](https://components.espressif.com/components/cherry-embedded/cherryusb) (`cherry-embedded/cherryusb` 1.5.2~2), whose DWC2 host port runs in **Buffer DMA** mode (`host_dma_desc_enable = false`) instead of the Scatter-Gather DMA mode used by ESP-IDF. This is the alternative stack recommended by Espressif in issue #14996. The application data path is unchanged: USB ISR → ISR-safe ring buffer → `hid_dispatch` task → `bridge_task` / `mouse_accumulator`.
+
+**Validation status**: The migration is build-verified only. The 72-hour, zero-configuration 1000Hz G502 hardware validation tracked in [issue #2](https://github.com/loommii/ESP32S3-USB-HID-To-BLE/issues/2) is still required before release. If the freeze persists, the TinyUSB and hardware-fallback plans remain open.
+
+**USB topology limits (CherryUSB 1.5.2 ESP port)**: the component hardcodes `CONFIG_USBHOST_MAX_EXTHUBS=1`, `CONFIG_USBHOST_MAX_EHPORTS=4` and `CONFIG_USBHOST_MAX_HID_CLASS=4` in `osal/idf/usb_config.h`. A single external hub with up to 4 ports and up to 4 HID interfaces are supported; multi-level hubs/docks need separate validation or a component patch.
+
+> Upgrading from V3.0.x: an existing `sdkconfig` does not contain the CherryUSB options. Delete `sdkconfig` (and `managed_components/` if it still contains `espressif__usb`) and run `idf.py set-target esp32s3` before building.

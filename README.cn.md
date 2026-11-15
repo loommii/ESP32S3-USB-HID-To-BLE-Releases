@@ -4,8 +4,10 @@
 
 # USB HID → BLE 蓝牙桥接器
 
-**版本: V3.0.4**
+**版本: V3.1.0**
 
+> **V3.1.0** — 将 ESP-IDF `usb_host` / `usb_host_hid` 协议栈替换为 CherryUSB（DWC2 Buffer DMA），用于规避 ESP32-S3 USB 冻结 erratum（#14996）。硬件验证尚未完成，详见“已知问题”。
+>
 > **V3.0.4** — 迁移至 ESP-IDF 6.1；修复 BLE HID 健壮性问题（mbuf 所有权、活跃目标一致性、解绑竞态）；修复桌面端 WiFi 扫描可靠性与结果分页。
 >
 > **V3.0.2** — 修复 USB 长时间使用后键盘鼠标停止响应的间歇性卡死问题，提升长时间运行时的 USB 通信稳定性。
@@ -130,7 +132,7 @@ idf.py flash monitor
 
 | 项目 | 说明 |
 |------|------|
-| 固件版本 | V3.0.4 |
+| 固件版本 | V3.1.0 |
 | SDK | ESP-IDF v6.1 |
 | BLE 协议栈 | Apache NimBLE |
 | BLE 连接模式 | 单一身份，最多 3 台主机同时连接 |
@@ -150,10 +152,16 @@ idf.py flash monitor
 
 ESP-IDF v6.1 不再在 ESP32-S3 上提供 `CONFIG_BT_NIMBLE_OPTIMIZE_MULTI_CONN`：`SOC_BLE_MULTI_CONN_OPTIMIZATION` 已从 esp32s3 的 SoC caps 中移除（v6.0.1 中仍存在）。多连接能力仍通过 `CONFIG_BT_NIMBLE_MAX_CONNECTIONS=3` 和 `CONFIG_BT_CTRL_BLE_MAX_ACT=6` 配置。6.1 构建同时将 `CONFIG_BT_NIMBLE_MSYS_1_BLOCK_COUNT` 从 24 提升到 32，为 3 连接/133Hz 留出余量。升级后请在硬件上对 3 主机切换/配对流程做负载验证。
 
-### USB 间歇性卡死（V3.0.2）
+### USB 间歇性卡死（V3.1.0 — CherryUSB 迁移）
 
 部分设备在长时间使用后可能出现 USB 键盘和鼠标停止响应的间歇性卡死，无任何错误日志或崩溃信息。USB 控制器静默停止传输数据，但 WiFi/HTTP 和 BLE 连接保持正常。
 
 **根因定位**: ESP32-S3 的 DWC2 USB 控制器存在硬件设计缺陷（HW erratum），经乐鑫工程师确认为芯片级问题，跟踪于 [GitHub Issue #14996](https://github.com/espressif/esp-idf/issues/14996)（仍开放）。高轮询率游戏鼠标（500-1000Hz）更容易触发，但普通 USB HID 设备也同样可能遇到。
 
-**V3.0.2 缓解措施**: 将 USB HID 回调函数最小化——仅执行原始数据拷贝到无锁环形缓冲区，由专门的调度任务负责后续处理。该方案降低触发概率但无法根除。
+**V3.1.0 迁移方案**: 固件不再使用 ESP-IDF 的 `usb_host` / `usb_host_hid` 协议栈，改用 [CherryUSB](https://components.espressif.com/components/cherry-embedded/cherryusb)（`cherry-embedded/cherryusb` 1.5.2~2）。CherryUSB 的 DWC2 host 端口使用 **Buffer DMA** 模式（`host_dma_desc_enable = false`），区别于 ESP-IDF 的 Scatter-Gather DMA；这是乐鑫在 issue #14996 中推荐的替代栈。应用层数据流保持不变：USB 中断 → ISR 安全环形缓冲 → `hid_dispatch` 任务 → `bridge_task` / `mouse_accumulator`。
+
+**验证状态**: 本次迁移仅完成编译验证。issue #2 要求的 72 小时、零配置、1000Hz G502 硬件验证仍需执行后才能发布。若卡死仍复现，TinyUSB（#3）与硬件 fallback（#4）方案保持开放。
+
+**USB 拓扑限制（CherryUSB 1.5.2 ESP 端口）**: 组件在 `osal/idf/usb_config.h` 中硬编码 `CONFIG_USBHOST_MAX_EXTHUBS=1`、`CONFIG_USBHOST_MAX_EHPORTS=4`、`CONFIG_USBHOST_MAX_HID_CLASS=4`。当前支持单级外部 Hub（最多 4 端口）与最多 4 个 HID 接口；多级 Hub/扩展坞需单独验证或修改组件。
+
+> 从 V3.0.x 升级：旧的 `sdkconfig` 不包含 CherryUSB 配置项。请删除 `sdkconfig`（若 `managed_components/` 中仍有 `espressif__usb` 也一并删除），然后运行 `idf.py set-target esp32s3` 再编译。
