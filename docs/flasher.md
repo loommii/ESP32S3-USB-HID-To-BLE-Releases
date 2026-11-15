@@ -8,11 +8,10 @@ head:
 
 # Web Flasher
 
-Flash the latest firmware to your ESP32-S3 board directly from the browser.
+Flash firmware to your ESP32-S3 board directly from the browser. Every released version is kept online — pick the one you need, the latest is selected by default.
 
 <div class="flasher-card">
-  <esp-web-install-button manifest="/ESP32S3-USB-HID-To-BLE-Releases/flasher/manifest.json"></esp-web-install-button>
-  <p class="flasher-note">Requires Chrome or Edge on desktop with HTTPS.</p>
+  <FirmwarePicker lang="en" />
 </div>
 
 <style>
@@ -22,10 +21,5 @@ Flash the latest firmware to your ESP32-S3 board directly from the browser.
   border-radius: 12px;
   padding: 3rem 2rem;
   margin: 1.5rem 0;
-}
-.flasher-note {
-  margin-top: 1.5rem;
-  font-size: 0.85rem;
-  color: #999;
 }
 </style>

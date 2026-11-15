@@ -300,12 +300,17 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
+      - name: 准备 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
       - name: 下载构建产物
         uses: actions/download-artifact@v4
         with:
           path: artifacts
 
-      - name: 落盘固件并回写 manifest 版本
+      - name: 按版本落盘固件并维护烧录索引
         env:
           TAG: ${{ needs.preflight.outputs.tag }}
           SHA: ${{ needs.preflight.outputs.source_sha }}
@@ -315,24 +320,14 @@ jobs:
           BIN="$(find artifacts -name "${FW_BIN}" -type f | head -1)"
           test -n "${BIN}" || { echo "::error::未找到固件产物"; exit 1; }
 
-          install -D -m 0644 "${BIN}" "docs/public/firmware/${FW_BIN}"
+          node scripts/firmware-index.mjs add \
+            --tag "${TAG}" \
+            --bin "${BIN}" \
+            --source-commit "${SHA}" \
+            --built-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-          # 关键：让网页烧录页显示的版本号与固件真实版本一致
-          jq --arg v "${TAG}" '.version = $v' docs/public/flasher/manifest.json > manifest.tmp
-          mv manifest.tmp docs/public/flasher/manifest.json
-
-          cat > docs/public/firmware/build-info.json <<EOF
-          {
-            "version": "${TAG}",
-            "source_repo": "${SOURCE_REPO}",
-            "source_commit": "${SHA}",
-            "built_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-            "bin": "${FW_BIN}",
-            "sha256": "$(sha256sum "docs/public/firmware/${FW_BIN}" | cut -d' ' -f1)"
-          }
-          EOF
-
-          echo "manifest version → ${TAG}"
+          echo "--- 版本索引 ---"
+          node scripts/firmware-index.mjs list
 
       - name: 准备发布资产
         env:
@@ -340,7 +335,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
-          cp "docs/public/firmware/${FW_BIN}" "dist/esp32s3-usb-hid-ble-${TAG}.bin"
+          cp "docs/public/firmware/esp32s3-usb-hid-ble-${TAG}.bin" dist/
           find artifacts -type f \( \
               -name '*.dmg' -o -name '*.exe' -o -name '*.msi' -o \
               -name '*.deb' -o -name '*.AppImage' \
@@ -348,22 +343,24 @@ jobs:
           ( cd dist && sha256sum ./* > SHA256SUMS.txt )
           ls -lh dist
 
-      - name: 提交固件与 manifest
+      - name: 提交固件与索引
         env:
           TAG: ${{ needs.preflight.outputs.tag }}
         run: |
           set -euo pipefail
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/public/firmware docs/public/flasher/manifest.json
+          git add docs/public/firmware docs/public/flasher
           if git diff --cached --quiet; then
             echo "无变更，跳过提交"
           else
-            git commit -m "release: ${TAG} firmware + flasher manifest"
-            git push origin "HEAD:${{ github.event.repository.default_branch }}"
+            git commit -m "release: ${TAG} firmware + flasher index"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
 
+      # Release 只在默认分支上创建：分支试跑不污染线上发布物
       - name: 创建或更新 Release
+        if: github.ref_name == github.event.repository.default_branch
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ needs.preflight.outputs.tag }}
@@ -371,22 +368,20 @@ jobs:
         run: |
           set -euo pipefail
 
-          NOTES="$(cat <<EOF
-          ## ${TAG}
+          LATEST="$(node scripts/firmware-index.mjs list | head -1 | cut -d' ' -f2)"
+          NOTES="#### ${TAG}
 
-          - 源码：`${SOURCE_REPO}@${SHA}`
+          - 源码：${SOURCE_REPO}@${SHA}
           - 构建：GitHub Actions 公开仓库 runner（run #${{ github.run_number }}）
-          - 固件：单文件合并镜像（offset 0），可直接用网页烧录
-          - 校验：见 `SHA256SUMS.txt`
-          EOF
-          )"
+          - 固件：单文件合并镜像（offset 0），网页烧录可用
+          - 页面默认版本：${LATEST}
+          - 校验：见 SHA256SUMS.txt"
 
           if gh release view "${TAG}" >/dev/null 2>&1; then
             echo "Release 已存在，覆盖资产"
           elif git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
             gh release create "${TAG}" --title "${TAG}" --notes "${NOTES}"
           else
-            # tag 指向包含本固件的提交，而不是随意的 HEAD
             gh release create "${TAG}" --target "$(git rev-parse HEAD)" \
               --title "${TAG}" --notes "${NOTES}"
           fi
@@ -397,10 +392,14 @@ jobs:
         env:
           TAG: ${{ needs.preflight.outputs.tag }}
         run: |
+          LATEST="$(node scripts/firmware-index.mjs list | head -1 | cut -d' ' -f2)"
+          COUNT="$(node -e 'const i=require("./docs/public/flasher/versions.json");console.log(i.versions.length)')"
           {
             echo "### ${TAG} 发布完成"
             echo ""
             echo "- Release: https://github.com/${{ github.repository }}/releases/tag/${TAG}"
             echo "- 烧录页: https://loommii.github.io/ESP32S3-USB-HID-To-BLE-Releases/flasher"
+            echo "- 页面默认版本（latest）: ${LATEST}"
+            echo "- 已保留版本数: ${COUNT}"
             echo "- 固件版本校验: 通过"
           } >> "$GITHUB_STEP_SUMMARY"
