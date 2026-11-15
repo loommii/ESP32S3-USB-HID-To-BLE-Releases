@@ -56,6 +56,7 @@ jobs:
       tag: ${{ steps.vars.outputs.tag }}
       semver: ${{ steps.vars.outputs.semver }}
       source_sha: ${{ steps.src.outputs.sha }}
+      desktop: ${{ steps.layout.outputs.desktop }}
     steps:
       - name: 校验 tag 格式
         id: vars
@@ -84,7 +85,18 @@ jobs:
         id: src
         run: echo "sha=$(git -C src rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-      - name: 校验四处版本号一致
+      - name: 识别目录布局（是否有桌面端）
+        id: layout
+        run: |
+          if [ -f src/desktop/package.json ]; then
+            echo "desktop=true"  >> "$GITHUB_OUTPUT"
+            echo "检测到桌面端源码"
+          else
+            echo "desktop=false" >> "$GITHUB_OUTPUT"
+            echo "该 tag 无桌面端源码，仅构建固件"
+          fi
+
+      - name: 校验版本号一致
         env:
           TAG: ${{ inputs.tag }}
         run: |
@@ -96,19 +108,28 @@ jobs:
           semver = tag[1:]
           bad = []
 
-          cfg = pathlib.Path("src/main/config.h").read_text(encoding="utf-8")
-          m = re.search(r'#define\s+PROJECT_VERSION\s+"([^"]+)"', cfg)
-          if not m:
-              bad.append("main/config.h 中找不到 PROJECT_VERSION 宏")
-          elif m.group(1) != tag:
-              bad.append(f"main/config.h PROJECT_VERSION = {m.group(1)!r}，应为 {tag!r}")
+          cfg = pathlib.Path("src/main/config.h")
+          if not cfg.exists():
+              bad.append("src/main/config.h 不存在")
+          else:
+              m = re.search(r'#define\s+PROJECT_VERSION\s+"([^"]+)"', cfg.read_text(encoding="utf-8"))
+              if not m:
+                  bad.append("main/config.h 中找不到 PROJECT_VERSION 宏")
+              else:
+                  v = m.group(1)
+                  # 历史 tag 可能形如 V2.0.1.4，而其源码版本只到 V2.0.1
+                  if v != tag and not tag.startswith(v + "."):
+                      bad.append(f"main/config.h PROJECT_VERSION = {v!r}，应为 {tag!r} 或其子版本")
 
           for path, label in (
               ("src/desktop/package.json", "desktop/package.json"),
               ("src/desktop/src-tauri/tauri.conf.json", "desktop/src-tauri/tauri.conf.json"),
           ):
+              p = pathlib.Path(path)
+              if not p.exists():
+                  continue   # 无桌面端的 tag 跳过
               try:
-                  v = json.loads(pathlib.Path(path).read_text(encoding="utf-8"))["version"]
+                  v = json.loads(p.read_text(encoding="utf-8"))["version"]
               except Exception as e:
                   bad.append(f"{label} 读取失败：{e}")
                   continue
@@ -120,7 +141,7 @@ jobs:
                   print(f"::error::{b}")
               sys.exit(1)
 
-          print(f"版本一致：{tag} / config.h / package.json / tauri.conf.json")
+          print(f"版本校验通过：{tag}")
           PY
 
   # ─────────────────────────────────────────────
@@ -179,7 +200,8 @@ jobs:
               sys.exit(f"app descriptor magic 不匹配：{magic:#010x}")
           version = app[base + 16: base + 48].split(b"\x00")[0].decode()
           print(f"app descriptor version = {version}")
-          if version != tag:
+          # 历史 tag 可能是子版本（V2.0.1.4），允许 tag 以版本号加 "." 开头
+          if version != tag and not tag.startswith(version + "."):
               sys.exit(f"::error::固件版本 {version!r} 与 tag {tag!r} 不一致")
           PY
 
@@ -197,6 +219,8 @@ jobs:
   build-desktop:
     name: 桌面客户端 ${{ matrix.label }}
     needs: preflight
+    # 历史 tag（V2.0.1.x）没有 desktop/ 目录，跳过整个矩阵
+    if: needs.preflight.outputs.desktop == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -288,7 +312,12 @@ jobs:
   publish:
     name: 发布
     needs: [preflight, build-firmware, build-desktop]
-    if: ${{ inputs.skip_publish == false }}
+    # build-desktop 可能被跳过（历史 tag 无桌面端），用 always() 保证仍能发布固件
+    if: ${{ always() && !cancelled() && inputs.skip_publish == false && needs.preflight.result == 'success' && needs.build-firmware.result == 'success' && (needs.build-desktop.result == 'success' || needs.build-desktop.result == 'skipped') }}
+    # 多个版本并行补档时发布阶段必须串行，避免 git push 相互覆盖
+    concurrency:
+      group: publish-release
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
