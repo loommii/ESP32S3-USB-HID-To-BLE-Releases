@@ -8,11 +8,10 @@ head:
 
 # Web 烧录
 
-直接在浏览器中为您的 ESP32-S3 开发板烧录最新固件。
+直接在浏览器中为您的 ESP32-S3 开发板烧录固件。所有已发布版本都会保存在线上，可以按需选择，默认选中最新版本。
 
 <div class="flasher-card">
-  <esp-web-install-button manifest="/ESP32S3-USB-HID-To-BLE-Releases/flasher/manifest.json"></esp-web-install-button>
-  <p class="flasher-note">需要桌面版 Chrome 或 Edge 浏览器，并确保通过 HTTPS 访问。</p>
+  <FirmwarePicker lang="zh" />
 </div>
 
 <style>
@@ -22,10 +21,5 @@ head:
   border-radius: 12px;
   padding: 3rem 2rem;
   margin: 1.5rem 0;
-}
-.flasher-note {
-  margin-top: 1.5rem;
-  font-size: 0.85rem;
-  color: #999;
 }
 </style>
