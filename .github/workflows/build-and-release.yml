@@ -453,6 +453,13 @@ jobs:
           # 重发布时同步更新说明，避免保留旧文案
           gh release edit "${TAG}" --notes "${NOTES}"
 
+          # 补档旧版本会让 Release 页的 "Latest" 指到刚创建的旧版本，纠正回语义最新
+          LATEST_TAG="$(node scripts/firmware-index.mjs list | head -1 | cut -d' ' -f2)"
+          if [ -n "${LATEST_TAG}" ] && gh release view "${LATEST_TAG}" >/dev/null 2>&1; then
+            gh release edit "${LATEST_TAG}" --latest
+            echo "Latest 指向 ${LATEST_TAG}"
+          fi
+
       # GITHUB_TOKEN 推送的提交不会触发其他工作流（GitHub 递归保护），
       # 因此显式派发一次 Pages 部署，否则线上烧录页会落后一个版本
       - name: 触发 Pages 部署
