@@ -1,6 +1,6 @@
 {
   "latest": "V3.1.0",
-  "updated": "2026-11-15T19:14:18Z",
+  "updated": "2026-11-15T19:14:27Z",
   "versions": [
     {
       "tag": "V3.1.0",
@@ -46,6 +46,15 @@
       "bin": "/firmware/esp32s3-usb-hid-ble-V3.0.0.bin",
       "sha256": "4122b9cdb84f19b3d403124eed36143e263d6a1068d9168a5e6c9ab4509183f1",
       "source_commit": "fe21c69861eaeef2deec1b556d747ae9a457f504"
+    },
+    {
+      "tag": "V2.0.1.4",
+      "date": "2026-11-15",
+      "built_at": "2026-11-15T19:14:27Z",
+      "manifest": "/flasher/manifest-V2.0.1.4.json",
+      "bin": "/firmware/esp32s3-usb-hid-ble-V2.0.1.4.bin",
+      "sha256": "c0812a88a7083d1db24c12cb8f767dcb2e4de9f2a57d0974fda2ecbe80195312",
+      "source_commit": "4616015840c1f934ed4dd0252e73522a53d6e2d7"
     },
     {
       "tag": "V2.0.1.3",
