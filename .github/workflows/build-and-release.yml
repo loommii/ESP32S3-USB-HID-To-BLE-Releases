@@ -314,10 +314,7 @@ jobs:
     needs: [preflight, build-firmware, build-desktop]
     # build-desktop 可能被跳过（历史 tag 无桌面端），用 always() 保证仍能发布固件
     if: ${{ always() && !cancelled() && inputs.skip_publish == false && needs.preflight.result == 'success' && needs.build-firmware.result == 'success' && (needs.build-desktop.result == 'success' || needs.build-desktop.result == 'skipped') }}
-    # 多个版本并行补档时发布阶段必须串行，避免 git push 相互覆盖
-    concurrency:
-      group: publish-release
-      cancel-in-progress: false
+
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -350,11 +347,14 @@ jobs:
           BIN="$(find artifacts -name "${FW_BIN}" -type f | head -1)"
           test -n "${BIN}" || { echo "::error::未找到固件产物"; exit 1; }
 
+          BUILT_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          mkdir -p artifacts
+          echo "${BUILT_AT}" > artifacts/.built_at
           node scripts/firmware-index.mjs add \
             --tag "${TAG}" \
             --bin "${BIN}" \
             --source-commit "${SHA}" \
-            --built-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            --built-at "${BUILT_AT}"
 
           echo "--- 版本索引 ---"
           node scripts/firmware-index.mjs list
@@ -376,17 +376,42 @@ jobs:
       - name: 提交固件与索引
         env:
           TAG: ${{ needs.preflight.outputs.tag }}
+          SHA: ${{ needs.preflight.outputs.source_sha }}
+          BRANCH: ${{ github.ref_name }}
         run: |
           set -euo pipefail
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/public/firmware docs/public/flasher
-          if git diff --cached --quiet; then
-            echo "无变更，跳过提交"
-          else
-            git commit -m "release: ${TAG} firmware + flasher index"
-            git push origin "HEAD:${GITHUB_REF_NAME}"
-          fi
+          BUILT_AT="$(cat artifacts/.built_at)"
+
+          # 多个版本可并行构建；推送阶段冲突时同步远端并重建索引后重试（幂等）
+          for attempt in 1 2 3 4 5 6; do
+            echo "推送尝试 ${attempt}"
+            git fetch --depth=1 origin "${BRANCH}"
+            git reset --hard "origin/${BRANCH}"
+
+            BIN="$(find artifacts -name "${FW_BIN}" -type f | head -1)"
+            node scripts/firmware-index.mjs add \
+              --tag "${TAG}" \
+              --bin "${BIN}" \
+              --source-commit "${SHA}" \
+              --built-at "${BUILT_AT}" > /dev/null
+
+            git add docs/public/firmware docs/public/flasher
+            if git diff --cached --quiet; then
+              echo "无变更，无需推送"
+              exit 0
+            fi
+            git commit -q -m "release: ${TAG} firmware + flasher index"
+            if git push origin "HEAD:${BRANCH}"; then
+              echo "推送成功（第 ${attempt} 次）"
+              exit 0
+            fi
+            echo "推送冲突，稍后重试"
+            sleep $((attempt * 5))
+          done
+          echo "::error::推送重试 6 次仍失败"
+          exit 1
 
       # Release 只在默认分支上创建：分支试跑不污染线上发布物
       - name: 创建或更新 Release
