@@ -1,0 +1,75 @@
+---
+name: Probe build-firmware
+concurrency:
+  group: build-release-${{ inputs.tag }}
+  cancel-in-progress: false
+env:
+  SOURCE_REPO: loommii/ESP32S3-USB-HID-To-BLE
+  FW_BIN: esp32s3-usb-hid-ble.bin
+permissions:
+  contents: read
+jobs:
+  build-firmware:
+    name: 固件构建
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container: espressif/idf:v6.1
+    steps:
+    - name: 检出私有源码（只读）
+      uses: actions/checkout@v4
+      with:
+        repository: loommii/ESP32S3-USB-HID-To-BLE
+        ref: "${{ inputs.tag }}"
+        token: "${{ secrets.PRIVATE_REPO_TOKEN }}"
+        persist-credentials: false
+        fetch-depth: 1
+    - name: 编译并合并为单文件（offset 0，供网页烧录）
+      env:
+        TAG: "${{ inputs.tag }}"
+      run: |
+        set -euo pipefail
+        . /opt/esp/idf/export.sh
+        # -DPROJECT_VER：让 app descriptor 记录真实版本（默认会退化成 "1"）
+        idf.py -DPROJECT_VER="${TAG}" set-target esp32s3
+        idf.py -DPROJECT_VER="${TAG}" build
+        mkdir -p "$GITHUB_WORKSPACE/out"
+        idf.py merge-bin -o "$GITHUB_WORKSPACE/out/esp32s3-usb-hid-ble.bin" -f raw
+    - name: 校验固件内嵌版本
+      env:
+        TAG: "${{ inputs.tag }}"
+      run: |
+        set -euo pipefail
+        python3 - "${TAG}" <<'PY'
+        import json, pathlib, struct, sys
+
+        tag = sys.argv[1]
+        desc = json.loads(pathlib.Path("build/project_description.json").read_text())
+        app = pathlib.Path(desc["app_bin"]).read_bytes()
+        base = 0x20  # esp_app_desc_t 在 app 镜像中的偏移
+        magic = struct.unpack_from("<I", app, base)[0]
+        if magic != 0xABCD5432:
+            sys.exit(f"app descriptor magic 不匹配：{magic:#010x}")
+        version = app[base + 16: base + 48].split(b"\x00")[0].decode()
+        print(f"app descriptor version = {version}")
+        if version != tag:
+            sys.exit(f"::error::固件版本 {version!r} 与 tag {tag!r} 不一致")
+        PY
+    - name: 上传固件产物（仅 .bin）
+      uses: actions/upload-artifact@v4
+      with:
+        name: firmware
+        path: out/esp32s3-usb-hid-ble.bin
+        if-no-files-found: error
+        retention-days: 7
+'on':
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 私有仓库 loommii/ESP32S3-USB-HID-To-BLE 的发布 tag（形如 V3.1.0）
+        required: true
+        type: string
+      skip_publish:
+        description: 只构建与校验，不提交、不打 tag、不建 Release
+        required: false
+        default: false
+        type: boolean

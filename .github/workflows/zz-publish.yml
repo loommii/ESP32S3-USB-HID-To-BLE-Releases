@@ -1,0 +1,134 @@
+---
+name: Probe publish
+concurrency:
+  group: build-release-${{ inputs.tag }}
+  cancel-in-progress: false
+env:
+  SOURCE_REPO: loommii/ESP32S3-USB-HID-To-BLE
+  FW_BIN: esp32s3-usb-hid-ble.bin
+permissions:
+  contents: read
+jobs:
+  publish:
+    name: 发布
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+    - name: 检出公开仓库
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        fetch-tags: true
+    - name: 下载构建产物
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+    - name: 落盘固件并回写 manifest 版本
+      env:
+        TAG: "${{ needs.preflight.outputs.tag }}"
+        SHA: "${{ needs.preflight.outputs.source_sha }}"
+      run: |
+        set -euo pipefail
+
+        BIN="$(find artifacts -name "${FW_BIN}" -type f | head -1)"
+        test -n "${BIN}" || { echo "::error::未找到固件产物"; exit 1; }
+
+        install -D -m 0644 "${BIN}" "docs/public/firmware/${FW_BIN}"
+
+        # 关键：让网页烧录页显示的版本号与固件真实版本一致
+        jq --arg v "${TAG}" '.version = $v' docs/public/flasher/manifest.json > manifest.tmp
+        mv manifest.tmp docs/public/flasher/manifest.json
+
+        cat > docs/public/firmware/build-info.json <<EOF
+        {
+          "version": "${TAG}",
+          "source_repo": "${SOURCE_REPO}",
+          "source_commit": "${SHA}",
+          "built_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+          "bin": "${FW_BIN}",
+          "sha256": "$(sha256sum "docs/public/firmware/${FW_BIN}" | cut -d' ' -f1)"
+        }
+        EOF
+
+        echo "manifest version → ${TAG}"
+    - name: 准备发布资产
+      env:
+        TAG: "${{ needs.preflight.outputs.tag }}"
+      run: |
+        set -euo pipefail
+        mkdir -p dist
+        cp "docs/public/firmware/${FW_BIN}" "dist/esp32s3-usb-hid-ble-${TAG}.bin"
+        find artifacts -type f \( \
+            -name '*.dmg' -o -name '*.exe' -o -name '*.msi' -o \
+            -name '*.deb' -o -name '*.AppImage' \
+          \) -exec cp {} dist/ \;
+        ( cd dist && sha256sum ./* > SHA256SUMS.txt )
+        ls -lh dist
+    - name: 提交固件与 manifest
+      env:
+        TAG: "${{ needs.preflight.outputs.tag }}"
+      run: |
+        set -euo pipefail
+        git config user.name  "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add docs/public/firmware docs/public/flasher/manifest.json
+        if git diff --cached --quiet; then
+          echo "无变更，跳过提交"
+        else
+          git commit -m "release: ${TAG} firmware + flasher manifest"
+          git push origin "HEAD:${{ github.event.repository.default_branch }}"
+        fi
+    - name: 创建或更新 Release
+      env:
+        GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        TAG: "${{ needs.preflight.outputs.tag }}"
+        SHA: "${{ needs.preflight.outputs.source_sha }}"
+      run: |
+        set -euo pipefail
+
+        NOTES="$(cat <<EOF
+        ## ${TAG}
+
+        - 源码：`${SOURCE_REPO}@${SHA}`
+        - 构建：GitHub Actions 公开仓库 runner（run #${{ github.run_number }}）
+        - 固件：单文件合并镜像（offset 0），可直接用网页烧录
+        - 校验：见 `SHA256SUMS.txt`
+        EOF
+        )"
+
+        if gh release view "${TAG}" >/dev/null 2>&1; then
+          echo "Release 已存在，覆盖资产"
+        elif git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
+          gh release create "${TAG}" --title "${TAG}" --notes "${NOTES}"
+        else
+          # tag 指向包含本固件的提交，而不是随意的 HEAD
+          gh release create "${TAG}" --target "$(git rev-parse HEAD)" \
+            --title "${TAG}" --notes "${NOTES}"
+        fi
+
+        gh release upload "${TAG}" dist/* --clobber
+    - name: 汇总
+      env:
+        TAG: "${{ needs.preflight.outputs.tag }}"
+      run: |
+        {
+          echo "### ${TAG} 发布完成"
+          echo ""
+          echo "- Release: https://github.com/${{ github.repository }}/releases/tag/${TAG}"
+          echo "- 烧录页: https://loommii.github.io/ESP32S3-USB-HID-To-BLE-Releases/flasher"
+          echo "- 固件版本校验: 通过"
+        } >> "$GITHUB_STEP_SUMMARY"
+'on':
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 私有仓库 loommii/ESP32S3-USB-HID-To-BLE 的发布 tag（形如 V3.1.0）
+        required: true
+        type: string
+      skip_publish:
+        description: 只构建与校验，不提交、不打 tag、不建 Release
+        required: false
+        default: false
+        type: boolean

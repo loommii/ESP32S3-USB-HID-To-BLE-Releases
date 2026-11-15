@@ -1,0 +1,94 @@
+---
+name: Probe preflight
+concurrency:
+  group: build-release-${{ inputs.tag }}
+  cancel-in-progress: false
+env:
+  SOURCE_REPO: loommii/ESP32S3-USB-HID-To-BLE
+  FW_BIN: esp32s3-usb-hid-ble.bin
+permissions:
+  contents: read
+jobs:
+  preflight:
+    name: 预检 / 版本一致性
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      tag: "${{ steps.vars.outputs.tag }}"
+      semver: "${{ steps.vars.outputs.semver }}"
+      source_sha: "${{ steps.src.outputs.sha }}"
+    steps:
+    - name: 校验 tag 格式
+      id: vars
+      env:
+        TAG: "${{ inputs.tag }}"
+      run: |
+        set -euo pipefail
+        if [[ ! "${TAG}" =~ ^V[0-9]+\.[0-9]+(\.[0-9]+)*$ ]]; then
+          echo "::error::tag 必须形如 V3.1.0，实际收到：${TAG}"
+          exit 1
+        fi
+        echo "tag=${TAG}"        >> "$GITHUB_OUTPUT"
+        echo "semver=${TAG#V}"   >> "$GITHUB_OUTPUT"
+    - name: 检出私有源码（只读，凭据不落盘）
+      uses: actions/checkout@v4
+      with:
+        repository: loommii/ESP32S3-USB-HID-To-BLE
+        ref: "${{ inputs.tag }}"
+        token: "${{ secrets.PRIVATE_REPO_TOKEN }}"
+        persist-credentials: false
+        fetch-depth: 1
+        path: src
+    - name: 记录源码提交 SHA
+      id: src
+      run: echo "sha=$(git -C src rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+    - name: 校验四处版本号一致
+      env:
+        TAG: "${{ inputs.tag }}"
+      run: |
+        set -euo pipefail
+        python3 - "${TAG}" <<'PY'
+        import json, pathlib, re, sys
+
+        tag = sys.argv[1]
+        semver = tag[1:]
+        bad = []
+
+        cfg = pathlib.Path("src/main/config.h").read_text(encoding="utf-8")
+        m = re.search(r'#define\s+PROJECT_VERSION\s+"([^"]+)"', cfg)
+        if not m:
+            bad.append("main/config.h 中找不到 PROJECT_VERSION 宏")
+        elif m.group(1) != tag:
+            bad.append(f"main/config.h PROJECT_VERSION = {m.group(1)!r}，应为 {tag!r}")
+
+        for path, label in (
+            ("src/desktop/package.json", "desktop/package.json"),
+            ("src/desktop/src-tauri/tauri.conf.json", "desktop/src-tauri/tauri.conf.json"),
+        ):
+            try:
+                v = json.loads(pathlib.Path(path).read_text(encoding="utf-8"))["version"]
+            except Exception as e:
+                bad.append(f"{label} 读取失败：{e}")
+                continue
+            if v != semver:
+                bad.append(f"{label} version = {v!r}，应为 {semver!r}")
+
+        if bad:
+            for b in bad:
+                print(f"::error::{b}")
+            sys.exit(1)
+
+        print(f"版本一致：{tag} / config.h / package.json / tauri.conf.json")
+        PY
+'on':
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 私有仓库 loommii/ESP32S3-USB-HID-To-BLE 的发布 tag（形如 V3.1.0）
+        required: true
+        type: string
+      skip_publish:
+        description: 只构建与校验，不提交、不打 tag、不建 Release
+        required: false
+        default: false
+        type: boolean
