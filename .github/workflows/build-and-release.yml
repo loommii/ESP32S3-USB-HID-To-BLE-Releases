@@ -370,6 +370,13 @@ jobs:
               -name '*.dmg' -o -name '*.exe' -o -name '*.msi' -o \
               -name '*.deb' -o -name '*.AppImage' \
             \) -exec cp {} dist/ \;
+          # GitHub 上传 Release 资产时会把文件名里的空格替换成点，
+          # 这里先做同样的归一化，否则 SHA256SUMS.txt 记录的名字与实际资产名对不上。
+          for f in dist/*; do
+            name="$(basename "$f")"
+            normalized="${name// /.}"
+            [ "$name" = "$normalized" ] || mv "$f" "dist/$normalized"
+          done
           ( cd dist && sha256sum ./* > SHA256SUMS.txt )
           ls -lh dist
 
