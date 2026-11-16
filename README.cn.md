@@ -4,8 +4,10 @@
 
 # USB HID → BLE 蓝牙桥接器
 
-**版本: V3.1.0**
+**版本: V3.1.1**
 
+> **V3.1.1** — 维护版本：固件与桌面端除版本元数据外无改动，与 V3.1.0 无功能差异。
+>
 > **V3.1.0** — 将 ESP-IDF `usb_host` / `usb_host_hid` 协议栈替换为 CherryUSB（DWC2 Buffer DMA），用于规避 ESP32-S3 USB 冻结 erratum（#14996）。硬件验证尚未完成，详见“已知问题”。
 >
 > **V3.0.4** — 迁移至 ESP-IDF 6.1；修复 BLE HID 健壮性问题（mbuf 所有权、活跃目标一致性、解绑竞态）；修复桌面端 WiFi 扫描可靠性与结果分页。
@@ -132,7 +134,7 @@ idf.py flash monitor
 
 | 项目 | 说明 |
 |------|------|
-| 固件版本 | V3.1.0 |
+| 固件版本 | V3.1.1 |
 | SDK | ESP-IDF v6.1 |
 | BLE 协议栈 | Apache NimBLE |
 | BLE 连接模式 | 单一身份，最多 3 台主机同时连接 |

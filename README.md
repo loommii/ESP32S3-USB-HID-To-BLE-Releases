@@ -4,8 +4,10 @@
 
 # USB HID → BLE Bridge
 
-**Version: V3.1.0**
+**Version: V3.1.1**
 
+> **V3.1.1** — Maintenance release: firmware and desktop client unchanged apart from version metadata; no functional difference from V3.1.0.
+>
 > **V3.1.0** — Replaced the ESP-IDF `usb_host` / `usb_host_hid` stack with CherryUSB (DWC2 Buffer DMA) to address the ESP32-S3 USB freeze erratum (#14996). Hardware validation is still pending; see Known Issues.
 >
 > **V3.0.4** — Migrated to ESP-IDF 6.1; BLE HID robustness fixes (mbuf ownership, active-target consistency, unpair race); desktop WiFi scan reliability and result pagination fixes.
@@ -132,7 +134,7 @@ All connections share a single BLE identity:
 
 | Item | Details |
 |------|---------|
-| Firmware Version | V3.1.0 |
+| Firmware Version | V3.1.1 |
 | SDK | ESP-IDF v6.1 |
 | BLE Stack | Apache NimBLE |
 | BLE Connection Mode | Single identity, up to 3 hosts simultaneously |
